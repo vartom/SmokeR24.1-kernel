@@ -152,7 +152,7 @@ static void cpuidle_setup_broadcast_timer(void *arg)
  *
  * Returns 0 on success, a negative error code otherwise.
  */
-static int __cpuidle_driver_init(struct cpuidle_driver *drv)
+static void __cpuidle_driver_init(struct cpuidle_driver *drv)
 {
 	int i;
 
@@ -179,8 +179,6 @@ static int __cpuidle_driver_init(struct cpuidle_driver *drv)
 		drv->bctimer = 1;
 		break;
 	}
-
-	return 0;
 }
 
 /**
@@ -206,9 +204,7 @@ static int __cpuidle_register_driver(struct cpuidle_driver *drv)
 	if (cpuidle_disabled())
 		return -ENODEV;
 
-	ret = __cpuidle_driver_init(drv);
-	if (ret)
-		return ret;
+	__cpuidle_driver_init(drv);
 
 	ret = __cpuidle_set_driver(drv);
 	if (ret)

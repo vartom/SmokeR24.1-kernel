@@ -198,6 +198,7 @@ static int lowmem_shrink(struct shrinker *s, struct shrink_control *sc)
 		lowmem_deathpending_timeout = jiffies + HZ;
 		lowmem_send_sig(selected, jiffies_sigkill_ts);
 		set_tsk_thread_flag(selected, TIF_MEMDIE);
+		lowmem_send_sig(selected, jiffies_sigkill_ts);
 		rem -= selected_tasksize;
 	}
 	lowmem_print(4, jiffies_lowmem_ts,

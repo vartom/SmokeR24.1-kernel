@@ -481,6 +481,11 @@ static int tegra12x_gpu_unpowergate(int id,
 		first = true;
 	}
 
+	if (tegra_powergate_is_powered(id)) {
+ 		WARN(1, "GPU rail is already on, refcount and status mismatch\n");
+ 		return 0;
+  	}
+
 	ret = tegra_dvfs_rail_power_up(gpu_rail);
 	if (ret)
 		goto err_power;

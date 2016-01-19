@@ -440,6 +440,7 @@ the existing panic controls already in that directory.
 
 ==============================================================
 
+<<<<<<< HEAD
 perf_cpu_time_max_percent:
 
 Hints to the kernel how much CPU time it should be allowed to
@@ -472,6 +473,12 @@ Controls use of the performance events system by unprivileged
 users (without CAP_SYS_ADMIN).  The default value is 3 if
 CONFIG_SECURITY_PERF_EVENTS_RESTRICT is set, or 1 otherwise.
 >>>>>>> 5833052... FROMLIST: security,perf: Allow further restriction of perf_event_open
+=======
+perf_event_paranoid:
+
+Controls use of the performance events system by unprivileged
+users (without CAP_SYS_ADMIN).  The default value is 1.
+>>>>>>> b79154b... BACKPORT: perf tools: Document the perf sysctls
 
  -1: Allow use of (almost) all events by all users
 >=0: Disallow raw tracepoint access by users without CAP_IOC_LOCK

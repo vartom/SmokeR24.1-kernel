@@ -1867,6 +1867,7 @@ static void binder_transaction(struct binder_proc *proc,
 	struct binder_buffer_object *last_fixup_obj = NULL;
 	binder_size_t last_fixup_min_off = 0;
 	struct binder_context *context = proc->context;
+	bool need_tcomplete;
 
 	e = binder_transaction_log_add(&context->transaction_log);
 	e->call_type = reply ? 2 : !!(tr->flags & TF_ONE_WAY);
@@ -1982,12 +1983,15 @@ static void binder_transaction(struct binder_proc *proc,
 	}
 	binder_stats_created(BINDER_STAT_TRANSACTION);
 
-	tcomplete = kzalloc(sizeof(*tcomplete), GFP_KERNEL);
-	if (tcomplete == NULL) {
-		return_error = BR_FAILED_REPLY;
-		goto err_alloc_tcomplete_failed;
+	need_tcomplete = reply || (tr->flags & TF_ONE_WAY);
+	if (need_tcomplete) {
+		tcomplete = kzalloc(sizeof(*tcomplete), GFP_KERNEL);
+		if (tcomplete == NULL) {
+			return_error = BR_FAILED_REPLY;
+			goto err_alloc_tcomplete_failed;
+		}
+		binder_stats_created(BINDER_STAT_TRANSACTION_COMPLETE);
 	}
-	binder_stats_created(BINDER_STAT_TRANSACTION_COMPLETE);
 
 	t->debug_id = atomic_inc_return(&binder_last_id);
 	e->debug_id = t->debug_id;
@@ -2218,8 +2222,10 @@ static void binder_transaction(struct binder_proc *proc,
 	}
 	t->work.type = BINDER_WORK_TRANSACTION;
 	list_add_tail(&t->work.entry, target_list);
-	tcomplete->type = BINDER_WORK_TRANSACTION_COMPLETE;
-	list_add_tail(&tcomplete->entry, &thread->todo);
+	if (need_tcomplete) {
+		tcomplete->type = BINDER_WORK_TRANSACTION_COMPLETE;
+		list_add_tail(&tcomplete->entry, &thread->todo);
+	}
 	if (target_wait) {
 		if (reply || !(t->flags & TF_ONE_WAY)) {
 			preempt_disable();
@@ -2241,8 +2247,10 @@ err_copy_data_failed:
 	t->buffer->transaction = NULL;
 	binder_free_buf(target_proc, t->buffer);
 err_binder_alloc_buf_failed:
-	kfree(tcomplete);
-	binder_stats_deleted(BINDER_STAT_TRANSACTION_COMPLETE);
+	if (need_tcomplete) {
+		kfree(tcomplete);
+		binder_stats_deleted(BINDER_STAT_TRANSACTION_COMPLETE);
+	}
 err_alloc_tcomplete_failed:
 	kfree(t);
 	binder_stats_deleted(BINDER_STAT_TRANSACTION);

@@ -148,6 +148,11 @@ struct mapped_device *dm_get_from_kobject(struct kobject *kobj);
 void dm_kobject_release(struct kobject *kobj);
 
 /*
+ * The kobject helper
+ */
+void dm_kobject_release(struct kobject *kobj);
+
+/*
  * Targets for linear and striped mappings
  */
 int dm_linear_init(void);

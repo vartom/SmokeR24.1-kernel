@@ -27,7 +27,6 @@
 #include <linux/miscdevice.h>
 #include <linux/mm.h>
 #include <linux/module.h>
-#include <linux/rtmutex.h>
 #include <linux/mutex.h>
 #include <linux/nsproxy.h>
 #include <linux/poll.h>
@@ -473,14 +472,14 @@ static long task_close_fd(struct binder_proc *proc, unsigned int fd)
 static inline void binder_lock(struct binder_context *context, const char *tag)
 {
 	trace_binder_lock(tag);
-	rt_mutex_lock(&context->binder_main_lock);
+	mutex_lock(&context->binder_main_lock);
 	trace_binder_locked(tag);
 }
 
 static inline void binder_unlock(struct binder_context *context, const char *tag)
 {
 	trace_binder_unlock(tag);
-	rt_mutex_unlock(&context->binder_main_lock);
+	mutex_unlock(&context->binder_main_lock);
 }
 
 static void binder_set_nice(long nice)

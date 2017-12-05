@@ -3738,8 +3738,10 @@ static void binder_deferred_func(struct work_struct *work)
 
 	do {
 		trace_binder_lock(__func__);
-		mutex_lock(&context->binder_deferred_lock);
+		mutex_lock(&context->binder_main_lock);
 		trace_binder_locked(__func__);
+
+		mutex_lock(&context->binder_deferred_lock);
 		if (!hlist_empty(&context->binder_deferred_list)) {
 			proc = hlist_entry(context->binder_deferred_list.first,
 					   struct binder_proc, deferred_work_node);
@@ -3766,6 +3768,7 @@ static void binder_deferred_func(struct work_struct *work)
 			binder_deferred_release(proc); /* frees proc */
 
 		trace_binder_unlock(__func__);
+		mutex_unlock(&context->binder_main_lock);
 		if (files)
 			put_files_struct(files);
 	} while (proc);

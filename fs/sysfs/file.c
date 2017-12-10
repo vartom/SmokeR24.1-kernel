@@ -12,7 +12,6 @@
 
 #include <linux/module.h>
 #include <linux/kobject.h>
-#include <linux/kallsyms.h>
 #include <linux/slab.h>
 #include <linux/fsnotify.h>
 #include <linux/namei.h>
@@ -91,8 +90,8 @@ static int fill_read_buffer(struct dentry * dentry, struct sysfs_buffer * buffer
 	 * indicate truncated result or overflow in normal use cases.
 	 */
 	if (count >= (ssize_t)PAGE_SIZE) {
-		print_symbol("fill_read_buffer: %s returned bad count\n",
-			(unsigned long)ops->show);
+		printk("fill_read_buffer: %ps returned bad count\n",
+				ops->show);
 		/* Try to struggle along */
 		count = PAGE_SIZE - 1;
 	}

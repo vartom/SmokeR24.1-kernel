@@ -4,7 +4,6 @@
  * DEBUG_PREEMPT variant of smp_processor_id().
  */
 #include <linux/export.h>
-#include <linux/kallsyms.h>
 #include <linux/sched.h>
 
 notrace unsigned int debug_smp_processor_id(void)
@@ -41,7 +40,7 @@ notrace unsigned int debug_smp_processor_id(void)
 	printk(KERN_ERR "BUG: using smp_processor_id() in preemptible [%08x] "
 			"code: %s/%d\n",
 			preempt_count() - 1, current->comm, current->pid);
-	print_symbol("caller is %s\n", (long)__builtin_return_address(0));
+	printk("caller is %ps\n", __builtin_return_address(0));
 	dump_stack();
 
 out_enable:

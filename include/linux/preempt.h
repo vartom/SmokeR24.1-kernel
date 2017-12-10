@@ -9,21 +9,6 @@
 #include <linux/linkage.h>
 #include <linux/list.h>
 
-static __always_inline int preempt_count(void)
-{
-	return current_thread_info()->preempt_count;
-}
-
-static __always_inline int *preempt_count_ptr(void)
-{
-	return &current_thread_info()->preempt_count;
-}
-
-static __always_inline void preempt_count_set(int pc)
-{
-	*preempt_count_ptr() = pc;
-}
-
 /*
  * We use the MSB mostly because its available; see <linux/preempt_mask.h> for
  * the other bits -- can't include that header due to inclusion hell.

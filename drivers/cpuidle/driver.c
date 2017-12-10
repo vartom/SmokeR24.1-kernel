@@ -10,6 +10,7 @@
 
 #include <linux/mutex.h>
 #include <linux/module.h>
+#include <linux/sched.h>
 #include <linux/cpuidle.h>
 #include <linux/cpumask.h>
 #include <linux/clockchips.h>
@@ -152,7 +153,7 @@ static void cpuidle_setup_broadcast_timer(void *arg)
  *
  * Returns 0 on success, a negative error code otherwise.
  */
-static int __cpuidle_driver_init(struct cpuidle_driver *drv)
+static void __cpuidle_driver_init(struct cpuidle_driver *drv)
 {
 	int i;
 
@@ -179,9 +180,38 @@ static int __cpuidle_driver_init(struct cpuidle_driver *drv)
 		drv->bctimer = 1;
 		break;
 	}
-
-	return 0;
 }
+
+#ifdef CONFIG_ARCH_HAS_CPU_RELAX
+static int poll_idle(struct cpuidle_device *dev,
+		struct cpuidle_driver *drv, int index)
+{
+	local_irq_enable();
+	if (!current_set_polling_and_test()) {
+		while (!need_resched())
+			cpu_relax();
+	}
+	current_clr_polling();
+
+	return index;
+}
+
+static void poll_idle_init(struct cpuidle_driver *drv)
+{
+	struct cpuidle_state *state = &drv->states[0];
+
+	snprintf(state->name, CPUIDLE_NAME_LEN, "POLL");
+	snprintf(state->desc, CPUIDLE_DESC_LEN, "CPUIDLE CORE POLL IDLE");
+	state->exit_latency = 0;
+	state->target_residency = 0;
+	state->power_usage = -1;
+	state->flags = 0;
+	state->enter = poll_idle;
+	state->disabled = false;
+}
+#else
+static void poll_idle_init(struct cpuidle_driver *drv) {}
+#endif /* !CONFIG_ARCH_HAS_CPU_RELAX */
 
 /**
  * __cpuidle_register_driver: register the driver
@@ -206,9 +236,7 @@ static int __cpuidle_register_driver(struct cpuidle_driver *drv)
 	if (cpuidle_disabled())
 		return -ENODEV;
 
-	ret = __cpuidle_driver_init(drv);
-	if (ret)
-		return ret;
+	__cpuidle_driver_init(drv);
 
 	ret = __cpuidle_set_driver(drv);
 	if (ret)
@@ -217,6 +245,8 @@ static int __cpuidle_register_driver(struct cpuidle_driver *drv)
 	if (drv->bctimer)
 		on_each_cpu_mask(drv->cpumask, cpuidle_setup_broadcast_timer,
 				 (void *)CLOCK_EVT_NOTIFY_BROADCAST_ON, 1);
+
+	poll_idle_init(drv);
 
 	return 0;
 }
@@ -346,10 +376,11 @@ struct cpuidle_driver *cpuidle_driver_ref(void)
  */
 void cpuidle_driver_unref(void)
 {
-	struct cpuidle_driver *drv = cpuidle_get_driver();
+	struct cpuidle_driver *drv;
 
 	spin_lock(&cpuidle_driver_lock);
 
+	drv = cpuidle_get_driver();
 	if (drv && !WARN_ON(drv->refcnt <= 0))
 		drv->refcnt--;
 

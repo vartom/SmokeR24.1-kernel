@@ -52,11 +52,12 @@ static ssize_t show_current_driver(struct device *dev,
 				   char *buf)
 {
 	ssize_t ret;
-	struct cpuidle_driver *cpuidle_driver = cpuidle_get_driver();
+	struct cpuidle_driver *drv;
 
 	spin_lock(&cpuidle_driver_lock);
-	if (cpuidle_driver)
-		ret = sprintf(buf, "%s\n", cpuidle_driver->name);
+	drv = cpuidle_get_driver();
+	if (drv)
+		ret = sprintf(buf, "%s\n", drv->name);
 	else
 		ret = sprintf(buf, "none\n");
 	spin_unlock(&cpuidle_driver_lock);
@@ -444,7 +445,7 @@ static void cpuidle_remove_state_sysfs(struct cpuidle_device *device)
 
 #define define_one_driver_ro(_name, show)                       \
 	static struct cpuidle_driver_attr attr_driver_##_name = \
-		__ATTR(_name, 0644, show, NULL)
+		__ATTR(_name, 0444, show, NULL)
 
 struct cpuidle_driver_kobj {
 	struct cpuidle_driver *drv;

@@ -312,7 +312,7 @@ struct {
 		.dwLength = __constant_cpu_to_le32(sizeof(mtp_ext_config_desc)),
 		.bcdVersion = __constant_cpu_to_le16(0x0100),
 		.wIndex = __constant_cpu_to_le16(4),
-		.bCount = __constant_cpu_to_le16(1),
+		.bCount = 1,
 	},
 	.function = {
 		.bFirstInterfaceNumber = 0,
@@ -552,6 +552,9 @@ static ssize_t mtp_read(struct file *fp, char __user *buf,
 	int ret = 0;
 
 	DBG(cdev, "mtp_read(%zu)\n", count);
+
+	if (dev == NULL || dev->ep_out == NULL)
+		return -ENODEV;
 
 	if (count > MTP_BULK_BUFFER_SIZE)
 		return -EINVAL;
@@ -1322,6 +1325,21 @@ static int mtp_bind_config(struct usb_configuration *c, bool ptp_config)
 	int ret = 0;
 
 	printk(KERN_INFO "mtp_bind_config\n");
+
+	/*
+	 * PTP piggybacks on MTP function so make sure we have
+	 * created MTP function before we associate this PTP
+	 * function with a gadget configuration.
+	 */
+	if (dev == NULL) {
+		pr_err("Error: Create MTP function before linking"
+				" PTP function with a gadget configuration\n");
+		pr_err("\t1: Delete existing PTP function if any\n");
+		pr_err("\t2: Create MTP function\n");
+		pr_err("\t3: Create and symlink PTP function"
+				" with a gadget configuration\n");
+		return NULL;
+	}
 
 	ret = usb_string_id(c->cdev);
 	if (ret < 0)

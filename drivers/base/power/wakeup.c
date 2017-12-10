@@ -319,10 +319,16 @@ int device_init_wakeup(struct device *dev, bool enable)
 {
 	int ret = 0;
 
+	if (!dev)
+		return -EINVAL;
+
 	if (enable) {
 		device_set_wakeup_capable(dev, true);
 		ret = device_wakeup_enable(dev);
 	} else {
+		if (dev->power.can_wakeup)
+			device_wakeup_disable(dev);
+
 		device_set_wakeup_capable(dev, false);
 	}
 
@@ -342,6 +348,20 @@ int device_set_wakeup_enable(struct device *dev, bool enable)
 	return enable ? device_wakeup_enable(dev) : device_wakeup_disable(dev);
 }
 EXPORT_SYMBOL_GPL(device_set_wakeup_enable);
+
+/**
+ * wakeup_source_not_registered - validate the given wakeup source.
+ * @ws: Wakeup source to be validated.
+ */
+static bool wakeup_source_not_registered(struct wakeup_source *ws)
+{
+	/*
+	 * Use timer struct to check if the given source is initialized
+	 * by wakeup_source_add.
+	 */
+	return ws->timer.function != pm_wakeup_timer_fn ||
+		   ws->timer.data != (unsigned long)ws;
+}
 
 /*
  * The functions below use the observation that each wakeup event starts a
@@ -382,6 +402,10 @@ EXPORT_SYMBOL_GPL(device_set_wakeup_enable);
 static void wakeup_source_activate(struct wakeup_source *ws)
 {
 	unsigned int cec;
+
+	if (WARN(wakeup_source_not_registered(ws),
+			"unregistered wakeup source\n"))
+		return;
 
 	/*
 	 * active wakeup source should bring the system
@@ -691,7 +715,7 @@ void pm_get_active_wakeup_sources(char *pending_wakeup_source, size_t max)
 }
 EXPORT_SYMBOL_GPL(pm_get_active_wakeup_sources);
 
-static void print_active_wakeup_sources(void)
+void pm_print_active_wakeup_sources(void)
 {
 	struct wakeup_source *ws;
 	int active = 0;
@@ -715,6 +739,7 @@ static void print_active_wakeup_sources(void)
 			last_activity_ws->name);
 	rcu_read_unlock();
 }
+EXPORT_SYMBOL_GPL(pm_print_active_wakeup_sources);
 
 /**
  * pm_wakeup_pending - Check if power transition in progress should be aborted.
@@ -754,8 +779,10 @@ bool pm_wakeup_pending(void)
 #endif
 	spin_unlock_irqrestore(&events_lock, flags);
 
-	if (ret)
-		print_active_wakeup_sources();
+	if (ret) {
+		pr_info("PM: Wakeup pending, aborting suspend\n");
+		pm_print_active_wakeup_sources();
+	}
 
 	return ret;
 }

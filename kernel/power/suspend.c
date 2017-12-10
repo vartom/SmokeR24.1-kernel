@@ -238,10 +238,11 @@ static int suspend_enter(suspend_state_t state, bool *wakeup)
 			trace_suspend_resume(TPS("machine_suspend"),
 				state, false);
 			events_check_enabled = false;
-		} else {
+		} else if (*wakeup) {
 			pm_get_active_wakeup_sources(suspend_abort,
 				MAX_SUSPEND_ABORT_LEN);
 			log_suspend_abort_reason(suspend_abort);
+			error = -EBUSY;
 		}
 		syscore_resume();
 	}
@@ -287,7 +288,7 @@ int suspend_devices_and_enter(suspend_state_t state)
 	suspend_test_start();
 	error = dpm_suspend_start(PMSG_SUSPEND);
 	if (error) {
-		printk(KERN_ERR "PM: Some devices failed to suspend\n");
+		pr_err("PM: Some devices failed to suspend, or early wake event detected\n");
 		log_suspend_abort_reason("Some devices failed to suspend");
 		goto Recover_platform;
 	}

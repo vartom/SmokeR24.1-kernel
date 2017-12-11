@@ -4,6 +4,11 @@
 You need to flash tos.img in order for all 4 cores to work otherwise only one core will work!
 Work only with shieldtablet blobs.
 
+# For LineageOS 14.1 compile:
+Device tree: https://github.com/arttttt/android_device_xiaomi_mocha/tree/cm-14.1-shield
+
+Vendor: https://github.com/arttttt/proprietary_vendor_nvidia/tree/cm-14.1
+
 =========================================================================
 * Works:
 	* LCD panel

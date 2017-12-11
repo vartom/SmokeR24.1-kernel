@@ -384,7 +384,7 @@ void __show_regs(struct pt_regs *regs)
 
 	show_regs_print_info(KERN_DEFAULT);
 
-	printk("PC is at %ps\n", instruction_pointer(regs));
+	printk("PC is at %ps\n", (void *)instruction_pointer(regs));
 	printk("LR is at %ps\n", (void *)regs->ARM_lr);
 	printk("pc : [<%08lx>]    lr : [<%08lx>]    psr: %08lx\n"
 	       "sp : %08lx  ip : %08lx  fp : %08lx\n",

@@ -26,9 +26,13 @@ Work only with shieldtablet blobs.
 =========================================================================
 # BUILD
 export ARCH=arm
+
 export CROSS_COMPILE=arm-linux-gnueabihf-
+
 make mocha_android_defconfig
+
 make -j4 zImage
+
 make tegra124-mocha.dtb
 
 # Busses

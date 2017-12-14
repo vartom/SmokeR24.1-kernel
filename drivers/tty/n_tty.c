@@ -268,6 +268,11 @@ static ssize_t n_tty_chars_in_buffer(struct tty_struct *tty)
 	unsigned long flags;
 	ssize_t n = 0;
 
+	if (!ldata) {
+		pr_err("%s(): ldata is NULL\n", __func__);
+		return -EINVAL;
+	}
+
 	raw_spin_lock_irqsave(&ldata->read_lock, flags);
 	if (!ldata->icanon) {
 		n = ldata->read_cnt;
